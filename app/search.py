@@ -107,3 +107,40 @@ def parse_query(raw: str, now: datetime) -> Filters:
     if f.since and f.since > now:
         f.errors.append("That date is in the future.")
     return f
+
+
+def dl_distance(a: str, b: str) -> int:
+    d = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+    for i in range(len(a) + 1):
+        d[i][0] = i
+    for j in range(len(b) + 1):
+        d[0][j] = j
+    for i in range(1, len(a) + 1):
+        for j in range(1, len(b) + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1)
+    return d[-1][-1]
+
+
+def name_score(query: str, name: str) -> int:
+    """0 = no match. Higher is better."""
+    if not query:
+        return 1  # no name given: everyone passes the name step
+    q, n = query.lower(), name.lower()
+    if q == n:
+        return 100
+    tokens = n.split()
+    if any(t == q for t in tokens) or n.startswith(q):
+        return 80
+    if q in n:
+        return 60
+    best = 0
+    for qt in q.split():
+        for t in tokens:
+            allowed = 1 if len(qt) <= 4 else 2
+            dist = dl_distance(qt, t)
+            if dist <= allowed:
+                best = max(best, 50 - dist * 10)
+    return best

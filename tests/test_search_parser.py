@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from app.search import parse_query, resolve_since, Filters
+from app.search import parse_query, resolve_since, Filters, dl_distance, name_score
 
 # Fixed baseline now: Thursday, 2026-10-01 15:00:00 UTC
 NOW = datetime(2026, 10, 1, 15, 0, 0, tzinfo=timezone.utc)
@@ -109,3 +109,25 @@ def test_invalid_stage_name_error():
     f = parse_query("stage manager", NOW)
     assert len(f.errors) > 0
     assert "'manager' is not a stage" in f.errors[0]
+
+
+def test_dl_distance_transposition():
+    # Transposition of adjacent characters counts as 1 edit in Damerau-Levenshtein
+    assert dl_distance("sharam", "sharma") == 1
+    assert dl_distance("rohit", "rohit") == 0
+    assert dl_distance("rohit", "rohti") == 1
+    assert dl_distance("alex", "alxe") == 1
+
+
+def test_name_scoring():
+    # Exact match
+    assert name_score("rohit", "rohit") == 100
+    # Token or prefix match
+    assert name_score("sharma", "rohit sharma") == 80
+    assert name_score("roh", "rohit") == 80
+    # Substring match
+    assert name_score("har", "sharma") == 60
+    # Fuzzy transposition match
+    assert name_score("sharam", "rohit sharma") > 0
+    # Empty query matches everyone
+    assert name_score("", "any candidate") == 1
