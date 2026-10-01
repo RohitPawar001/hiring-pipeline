@@ -130,10 +130,26 @@ The API provides endpoints to manage candidate progression through the hiring pi
 
 > **Note on Duration Searches:** Searches with duration constraints such as `"stuck in Screening"` or `"in Screening > 7 days"` automatically filter for active candidates and exclude terminal outcomes (`Hired` / `Rejected`).
 
-> **Interactive API Documentation:** Available at [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI).
+---
 
+## 🌱 Seeding & Demo Data
+
+A seed script is provided to populate the pipeline with sample candidates spanning various stages, explicit historical timestamps, notes, and duration metrics (useful for testing `"stuck for a week"`, `"since Monday"`, and fuzzy searches):
+
+### Run Seed Script via Docker Compose
+
+```bash
+docker compose exec app python scripts/seed.py
+```
+
+### Run Seed Script Locally
+
+```bash
+python scripts/seed.py
+```
 
 ---
+
 
 ## 🧪 Testing
 
