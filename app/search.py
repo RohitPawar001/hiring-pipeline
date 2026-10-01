@@ -144,3 +144,28 @@ def name_score(query: str, name: str) -> int:
             if dist <= allowed:
                 best = max(best, 50 - dist * 10)
     return best
+
+
+def describe(f: Filters) -> str:
+    """Produce a human-readable summary of the interpreted filter."""
+    parts = []
+    if f.name:
+        parts.append(f'name ≈ "{f.name}"')
+    if f.include:
+        parts.append(f"stage = {', '.join(s.capitalize() for s in f.include)}")
+    if f.exclude:
+        parts.append(f"stage ≠ {', '.join(s.capitalize() for s in f.exclude)}")
+    if f.min_days is not None:
+        days_str = f"{int(f.min_days)} days" if f.min_days.is_integer() else f"{f.min_days} days"
+        parts.append(f"in stage > {days_str}")
+    if f.ever_reached:
+        reached_str = f"reached {f.ever_reached.capitalize()}"
+        if f.not_hired:
+            reached_str += " (not hired)"
+        parts.append(reached_str)
+    if f.moved_to:
+        moved_str = f"moved to {f.moved_to.capitalize()}"
+        if f.since:
+            moved_str += f" since {f.since.strftime('%Y-%m-%d')}"
+        parts.append(moved_str)
+    return ", ".join(parts) if parts else "all candidates"

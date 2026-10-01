@@ -122,3 +122,26 @@ def test_db_immutability_triggers():
         # Raw TRUNCATE on stage_events must raise an exception
         with pytest.raises(psycopg.errors.RaiseException, match="stage_events is append-only"):
             conn.execute("TRUNCATE TABLE stage_events")
+
+
+def test_search_endpoint():
+    unique_suffix = uuid.uuid4().hex[:6]
+    name1 = f"Rohit Sharma_{unique_suffix}"
+    name2 = f"Pooja Patel_{unique_suffix}"
+    
+    c1 = client.post("/candidates", json={"name": name1, "email": "rohit@example.com"}).json()["id"]
+    c2 = client.post("/candidates", json={"name": name2, "email": "pooja@example.com"}).json()["id"]
+
+    client.post(f"/candidates/{c1}/move", json={"to": "Screening"})
+
+    # Search with name and stage
+    res = client.get(f"/search?q=sharma in screening").json()
+    assert res["count"] >= 1
+    assert any(r["id"] == c1 for r in res["results"])
+    assert 'name ≈ "sharma"' in res["interpreted_as"]
+    assert "stage = Screening" in res["interpreted_as"]
+
+    # Fuzzy search with typo
+    res_fuzzy = client.get(f"/search?q=sharam").json()
+    assert res_fuzzy["count"] >= 1
+    assert any(r["id"] == c1 for r in res_fuzzy["results"])

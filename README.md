@@ -126,8 +126,12 @@ The API provides endpoints to manage candidate progression through the hiring pi
 | `GET` | `/candidates` | Retrieve candidate board grouped by stages |
 | `GET` | `/candidates/{cid}` | Get candidate details, days in stage, & full transition history |
 | `POST` | `/candidates/{cid}/move` | Transition candidate to the next valid stage (row-locked) |
+| `GET` | `/search?q=...` | Natural language candidate search with query interpretation & fuzzy scoring |
+
+> **Note on Duration Searches:** Searches with duration constraints such as `"stuck in Screening"` or `"in Screening > 7 days"` automatically filter for active candidates and exclude terminal outcomes (`Hired` / `Rejected`).
 
 > **Interactive API Documentation:** Available at [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI).
+
 
 ---
 
