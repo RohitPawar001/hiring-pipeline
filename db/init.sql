@@ -1,0 +1,1 @@
+-- Schema initialization for hiring pipeline database
