@@ -133,7 +133,29 @@ The API provides endpoints to manage candidate progression through the hiring pi
 
 ## 🧪 Testing
 
-Run unit tests to verify the pipeline state machine rules and validation logic:
+The test suite covers pure logic state machine validation, full API integration, and PostgreSQL immutability guarantees.
+
+### Test Suites Included
+
+- **`tests/test_pipeline.py` (State Machine Logic):**
+  - Sequential progression validation (`Applied` → `Screening` → `Interview` → `Offer` → `Hired`)
+  - Stage-skipping and backward-movement prevention
+  - Non-final stage rejection support
+  - Terminal state validation (`Hired` / `Rejected` cannot transition)
+
+- **`tests/test_api.py` (FastAPI & Immutability Integration):**
+  - Candidate creation and initial state assignment (`Applied`)
+  - HTTP 422 error handling for invalid/skipped moves and terminal stage transitions
+  - Complete history log integrity & event sequencing
+  - Direct database trigger assertions verifying `UPDATE`, `DELETE`, and `TRUNCATE` operations raise exceptions on `stage_events`
+
+- **`tests/test_search_parser.py` (Natural Language Search Parser):**
+  - Stopword filtering and candidate name extraction
+  - Single/multiple stage inclusion and exclusion handling
+  - Historical transition tracking (`reached <stage> [but not hired]`)
+  - Temporal queries (`moved to <stage> since <day|date>`, duration thresholds `stuck`, `more than X days/weeks`)
+  - Error catching for impossible stage combinations, invalid stage names, and future dates
+
 
 ### Running Tests with Docker Compose
 
@@ -146,6 +168,7 @@ docker compose exec app pytest tests/ -v
 ```bash
 pytest tests/ -v
 ```
+
 
 
 
