@@ -13,6 +13,17 @@ def unique_name(prefix="Candidate"):
     return f"{prefix}_{uuid.uuid4().hex[:8]}"
 
 
+def test_get_config():
+    resp = client.get("/config")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "stages" in data
+    assert "allowed_transitions" in data
+    assert "final_stages" in data
+    assert "timezone" in data
+    assert "Applied" in data["stages"]
+
+
 def test_create_candidate_appears_in_applied():
     name = unique_name("Alice")
     email = f"{name.lower()}@example.com"
@@ -110,24 +121,26 @@ def test_db_immutability_triggers():
     resp = client.post("/candidates", json={"name": name, "email": "eve@example.com"})
     cid = resp.json()["id"]
 
+    # Raw UPDATE on stage_events must raise an exception
     with get_conn() as conn:
-        # Raw UPDATE on stage_events must raise an exception
         with pytest.raises(psycopg.errors.RaiseException, match="stage_events is append-only"):
             conn.execute("UPDATE stage_events SET note='tampered' WHERE candidate_id=%s", (cid,))
 
-        # Raw DELETE on stage_events must raise an exception
+    # Raw DELETE on stage_events must raise an exception
+    with get_conn() as conn:
         with pytest.raises(psycopg.errors.RaiseException, match="stage_events is append-only"):
             conn.execute("DELETE FROM stage_events WHERE candidate_id=%s", (cid,))
 
-        # Raw TRUNCATE on stage_events must raise an exception
+    # Raw TRUNCATE on stage_events must raise an exception
+    with get_conn() as conn:
         with pytest.raises(psycopg.errors.RaiseException, match="stage_events is append-only"):
             conn.execute("TRUNCATE TABLE stage_events")
 
 
 def test_search_endpoint():
     unique_suffix = uuid.uuid4().hex[:6]
-    name1 = f"Rohit Sharma_{unique_suffix}"
-    name2 = f"Pooja Patel_{unique_suffix}"
+    name1 = f"Rohit Sharma {unique_suffix}"
+    name2 = f"Pooja Patel {unique_suffix}"
     
     c1 = client.post("/candidates", json={"name": name1, "email": "rohit@example.com"}).json()["id"]
     c2 = client.post("/candidates", json={"name": name2, "email": "pooja@example.com"}).json()["id"]

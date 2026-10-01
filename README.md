@@ -2,11 +2,32 @@
 
 A web application designed for recruiters to manage candidate stages (Applied → Screening → Interview → Offer → Hired / Rejected), track candidate stage duration & immutable audit history, and perform intelligent candidate searches.
 
+![Mini Hiring Pipeline Board](docs/assets/pipeline_board.png)
+
+<p align="center">
+  <img src="docs/assets/add_candidate_modal.png" width="48%" alt="Add Candidate Modal" />
+  <img src="docs/assets/how_to_use_modal.png" width="48%" alt="How to Use Guide Modal" />
+</p>
+
 ---
 
 ## 🐳 Quick Start with Docker Compose (Recommended)
 
-The easiest way to run the application along with PostgreSQL is using Docker Compose:
+The easiest and cleanest way to run the entire application along with PostgreSQL is using Docker Compose.
+
+### 📋 Prerequisites
+
+Before running the project with Docker:
+1. **Docker Desktop / Docker Engine:** Ensure Docker is installed and actively running.
+   - [Install Docker Desktop for Windows / Mac / Linux](https://www.docker.com/products/docker-desktop/)
+2. **Verify Docker CLI Installation:**
+   ```bash
+   docker --version
+   docker compose version
+   ```
+3. **Ports Availability:** Ensure host port `8000` (Web App/API) and port `5432` (PostgreSQL) are free.
+
+---
 
 ### 1. Build and Start Services
 
@@ -23,12 +44,110 @@ This will:
 
 - **Web App / UI:** [http://localhost:8000](http://localhost:8000)
 - **Interactive API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Pipeline Config Endpoint:** [http://localhost:8000/config](http://localhost:8000/config)
 
 ### 3. Stop Services
 
 ```bash
 docker compose down
 ```
+
+---
+
+## 💻 Local Development Setup (Without Docker App)
+
+If you wish to run the FastAPI backend locally via `uvicorn` on your host machine while using the Dockerized PostgreSQL database:
+
+### 1. Start Only the PostgreSQL Database Container
+
+```bash
+docker compose up -d db
+```
+
+### 2. Set Up Virtual Environment & Dependencies
+
+```bash
+# Using uv
+uv venv
+uv pip install -r requirements.txt
+
+# Or using standard venv
+python -m venv .venv
+# On Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# On macOS/Linux:
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Set the Database Connection String
+
+If your local host has a native PostgreSQL service installed on port `5432`, ensure `DATABASE_URL` points to the correct port to avoid `password authentication failed` conflicts.
+
+**PowerShell (Windows):**
+```powershell
+$env:DATABASE_URL = "postgresql://app:app@localhost:5432/hiring"
+
+# Direct runner:
+uv run main.py
+# Or via uvicorn directly:
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+**Bash / macOS / Linux:**
+```bash
+export DATABASE_URL="postgresql://app:app@localhost:5432/hiring"
+
+# Direct runner:
+python main.py
+# Or via uvicorn directly:
+uvicorn app.main:app --reload --port 8000
+```
+
+### 4. Access the Application
+
+- **Web App / UI:** [http://localhost:8000](http://localhost:8000)
+- **Interactive API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Pipeline Config Endpoint:** [http://localhost:8000/config](http://localhost:8000/config)
+
+---
+
+## 🖥️ Using the Web UI
+
+Once the application is running, open **[http://localhost:8000](http://localhost:8000)** in your browser to interact with the Kanban pipeline and smart search.
+
+### 1. Kanban Pipeline Board
+- **Columns (In Order):** `Applied` → `Screening` → `Interview` → `Offer` → `Hired`, plus `Rejected`.
+- **Card Information:** Each card displays candidate name, ID, email, stage entry date, and active days spent in that stage.
+- **Stage Progression:**
+  - Click **Next → [Stage]** to advance the candidate strictly to the next valid stage.
+  - Click **Reject** to disqualify a candidate at any non-final stage.
+  - An optional **Audit Note** modal allows adding context (e.g. *"Passed system design round"*), which is permanently appended to the candidate's history log.
+- **Add Candidate:** Click **+ Add Candidate** in the top bar to create a candidate directly in the initial `Applied` stage.
+
+### 2. Candidate Detail & Audit Drawer
+- Click anywhere on a candidate's card to open the **Candidate Detail Drawer**.
+- Displays total duration in the current stage (e.g., `4.2 days in Interview`).
+- Shows the complete **Append-Only Timeline** detailing every historical transition timestamp, previous stage, new stage, and audit notes.
+
+### 3. Natural Language Search Box
+Type intuitive queries in the top search bar and press <kbd>Enter</kbd> (or click **Search**):
+
+| Example Query | What It Does |
+|---|---|
+| `sharam` | **Fuzzy Typo-Tolerant Match** finds *"Rohit Sharma"* via Damerau-Levenshtein transposition. |
+| `in Screening` | Filters candidates currently in the **Screening** stage. |
+| `stuck in Interview` | Finds active candidates in **Interview** for **> 7 days**. |
+| `in Screening more than 3 days` | Filters active candidates in **Screening** for **> 3 days**. |
+| `moved to Interview since Monday` | Filters candidates who transitioned to **Interview** on or after this past Monday. |
+| `reached Offer but not hired` | Historical filter for candidates who reached the **Offer** stage but are not currently Hired. |
+| `everyone except rejected` | Filters out candidates in the **Rejected** column. |
+| `sharma in Screening` | Combines name search and stage filter with weighted score ranking. |
+
+- **Query Interpretation:** The UI shows how your query was parsed (e.g., `🔍 Interpreted as: name ≈ "sharma", stage = Screening`).
+- **Matching Highlights:** Matching candidate cards are highlighted in blue on the board.
+- **Helpful Validation Errors:** Contradictory searches (e.g. `hired and rejected` or `stage invalid`) display clear explanations in red rather than failing silently.
+
 
 ---
 
@@ -96,7 +215,81 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 🏗 Architecture & Design Decisions
+## 🏗 Architecture & System Flow Diagrams
+
+### 1. High-Level System Architecture
+
+```mermaid
+graph TD
+    User["👤 Recruiter / Web Browser"]
+    
+    subgraph Frontend ["🎨 Frontend (Single-Page App)"]
+        UI["Vanilla JS + CSS (index.html)"]
+        Board["Kanban Pipeline Board"]
+        Search["Natural Language Search Box"]
+        Drawer["Audit History Timeline Drawer"]
+        Modal["Move & Audit Note Modal"]
+    end
+    
+    subgraph Backend ["⚡ FastAPI Application (/app)"]
+        Main["main.py (App & Static Mount)"]
+        ConfigRoute["/config (Pipeline Specs)"]
+        CandRoute["/candidates (CRUD & Move)"]
+        SearchRoute["/search (NL Query & Ranking)"]
+        
+        SM["Pipeline State Machine (pipeline.py)"]
+        NLP["NL Query Parser (search.py)"]
+        DL["Damerau-Levenshtein Scorer"]
+        DBPool["Connection Manager (db.py)"]
+    end
+    
+    subgraph Database ["🐘 PostgreSQL 16 (Event-Sourced)"]
+        CandTable[("candidates Table<br/>(id, name, email, created_at)")]
+        EventTable[("stage_events Table<br/>(Append-Only Log)")]
+        Triggers["💥 PL/pgSQL Immutability Triggers<br/>(BEFORE UPDATE/DELETE/TRUNCATE)"]
+        CurrentView["👁️ candidate_current View<br/>(LATERAL JOIN Latest Event)"]
+    end
+
+    User <--> UI
+    UI --> Board & Search & Drawer & Modal
+    
+    Board <--> CandRoute & ConfigRoute
+    Search <--> SearchRoute
+    Modal --> CandRoute
+    Drawer <--> CandRoute
+
+    CandRoute --> SM & DBPool
+    SearchRoute --> NLP & DL & DBPool
+    
+    DBPool --> CandTable & EventTable & CurrentView
+    EventTable --- Triggers
+    CandTable -.-> CurrentView
+    EventTable -.-> CurrentView
+```
+
+### 2. Candidate State Machine & Stage Progression
+
+```mermaid
+stateDiagram-v2
+    [*] --> Applied: POST /candidates (Auto-Created)
+    
+    Applied --> Screening: Next → Screening
+    Screening --> Interview: Next → Interview
+    Interview --> Offer: Next → Offer
+    Offer --> Hired: Next → Hired (Final Stage 🔒)
+    
+    Applied --> Rejected: Disqualify (with Audit Note)
+    Screening --> Rejected: Disqualify (with Audit Note)
+    Interview --> Rejected: Disqualify (with Audit Note)
+    Offer --> Rejected: Disqualify (with Audit Note)
+    
+    Rejected --> [*]: Final Outcome 🔒 (No moves allowed)
+    Hired --> [*]: Final Outcome 🔒 (No moves allowed)
+```
+
+---
+
+## 🏛️ Design Decisions & Core Pillars
 
 ### 📊 1. Event Sourcing & Database Immutability
 The pipeline uses an **append-only event model** for tracking candidate stage transitions rather than mutating status in-place:
@@ -163,14 +356,17 @@ Standard Levenshtein distance treats adjacent character transposition (e.g., `sh
 
 ---
 
-## 📡 REST API Endpoints
+## 📡 REST API Endpoints & Swagger Docs
 
-The API provides endpoints to manage candidate progression through the hiring pipeline:
+![Interactive Swagger API Docs](docs/assets/api_swagger_docs.png)
+
+The API provides modular endpoints to manage candidate progression through the hiring pipeline:
 
 | Method | Endpoint | Description |
 |---|---|---|
+| `GET` | `/config` | Retrieve pipeline stages, allowed transitions, final states, and timezone |
 | `POST` | `/candidates` | Add a candidate (starts at `Applied` stage) |
-| `GET` | `/candidates` | Retrieve candidate board grouped by stages |
+| `GET` | `/candidates` | Retrieve candidate board grouped by stages with active duration |
 | `GET` | `/candidates/{cid}` | Get candidate details, days in stage, & full transition history |
 | `POST` | `/candidates/{cid}/move` | Transition candidate to the next valid stage (row-locked) |
 | `GET` | `/search?q=...` | Natural language candidate search with query interpretation & fuzzy scoring |
@@ -179,23 +375,31 @@ The API provides endpoints to manage candidate progression through the hiring pi
 
 ---
 
-## 🌱 Seeding & Demo Data
+---
 
-A seed script is provided to populate the pipeline with sample candidates spanning various stages, explicit historical timestamps, notes, and duration metrics (useful for testing `"stuck for a week"`, `"since Monday"`, and fuzzy searches):
+## 🌱 Database Initialization & Seeding Demo Data
 
-### Run Seed Script via Docker Compose
+### 1. Manual / Re-Apply Database Schema (Optional)
+When using Docker Compose, [`db/init.sql`](file:///d:/interview/hiring-pipeline/db/init.sql) runs automatically on initial container startup via `/docker-entrypoint-initdb.d/init.sql`. To manually apply or re-run the schema:
 
 ```bash
-docker compose exec app python scripts/seed.py
+docker compose exec -T db psql -U app -d hiring -f /docker-entrypoint-initdb.d/init.sql
 ```
 
-### Run Seed Script Locally
+### 2. Populate Seed & Demo Data
+A seed script is provided to populate the pipeline with sample candidates spanning various stages, explicit historical timestamps, notes, and duration metrics (useful for testing `"stuck for a week"`, `"since Monday"`, and fuzzy searches):
 
+```bash
+docker compose exec -T app python scripts/seed.py
+```
+
+*Or run locally:*
 ```bash
 python scripts/seed.py
 ```
 
 ---
+
 
 
 ## 🧪 Testing

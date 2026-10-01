@@ -135,6 +135,22 @@
       border-color: var(--danger);
     }
 
+    .search-chip {
+      background-color: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.15rem 0.6rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .search-chip:hover {
+      background-color: var(--surface-hover);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+
     .main-container {
       padding: 1.5rem 2rem;
       flex: 1;
@@ -539,8 +555,13 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
         Refresh
       </button>
+      <button class="btn" id="helpGuideBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        How to Use
+      </button>
     </div>
   </header>
+
 
   <main class="main-container">
     <!-- Natural Language Search Section -->
@@ -553,6 +574,15 @@
         <button class="btn" id="searchSubmitBtn">Search</button>
         <button class="btn" id="searchClearBtn" style="display:none;">Clear</button>
       </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-muted);">
+        <span>Quick examples:</span>
+        <span class="search-chip" onclick="setQuickSearch('sharam')">sharam (typo)</span>
+        <span class="search-chip" onclick="setQuickSearch('in screening')">in screening</span>
+        <span class="search-chip" onclick="setQuickSearch('stuck in interview')">stuck in interview</span>
+        <span class="search-chip" onclick="setQuickSearch('moved to interview since monday')">moved since monday</span>
+        <span class="search-chip" onclick="setQuickSearch('reached offer but not hired')">reached offer (not hired)</span>
+        <span class="search-chip" onclick="setQuickSearch('everyone except rejected')">except rejected</span>
+      </div>
       <div class="search-status" id="searchStatus"></div>
     </section>
 
@@ -561,6 +591,46 @@
       <!-- 6 columns will be rendered here dynamically -->
     </section>
   </main>
+
+  <!-- Help & Guide Modal -->
+  <div class="modal-backdrop" id="helpModalBackdrop">
+    <div class="modal" style="max-width: 620px;">
+      <div class="modal-header">
+        <h2 class="modal-title">📖 How to Use Mini Hiring Pipeline</h2>
+        <button class="modal-close" id="helpModalCloseBtn">&times;</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 1rem; font-size: 0.9rem; max-height: 70vh; overflow-y: auto; padding-right: 0.5rem;">
+        <div>
+          <h4 style="color: var(--primary); margin-bottom: 0.3rem;">1. Kanban Board & Strict State Machine</h4>
+          <p style="color: var(--text-muted); line-height: 1.4;">
+            Candidates advance linearly: <strong>Applied &rarr; Screening &rarr; Interview &rarr; Offer &rarr; Hired</strong>. Candidates can be <strong>Rejected</strong> from any active stage. Final stages (<em>Hired / Rejected</em>) are permanently locked.
+          </p>
+        </div>
+        <div>
+          <h4 style="color: var(--primary); margin-bottom: 0.3rem;">2. Moving Candidates & Audit Notes</h4>
+          <p style="color: var(--text-muted); line-height: 1.4;">
+            Click <strong>Next &rarr; [Stage]</strong> or <strong>Reject</strong> on any candidate card. A modal will prompt for an optional <em>Audit Note</em> (e.g., <em>"Passed tech round"</em>), which is permanently appended to the database audit trail.
+          </p>
+        </div>
+        <div>
+          <h4 style="color: var(--primary); margin-bottom: 0.3rem;">3. Candidate Detail & Audit History</h4>
+          <p style="color: var(--text-muted); line-height: 1.4;">
+            Click anywhere on a card to open the <strong>Detail Drawer</strong> on the right. You will see total days in the active stage and the complete chronological event log with timestamps.
+          </p>
+        </div>
+        <div>
+          <h4 style="color: var(--primary); margin-bottom: 0.3rem;">4. Smart Natural Language Search</h4>
+          <p style="color: var(--text-muted); line-height: 1.4;">
+            Type queries into the top search bar. Supports fuzzy typo tolerance via Damerau-Levenshtein (<em>"sharam"</em> &rarr; <em>"Rohit Sharma"</em>), stage inclusion/exclusion (<em>"in Screening"</em>, <em>"except rejected"</em>), duration filters (<em>"stuck in interview"</em>, <em>"more than 3 days"</em>), and historical transitions (<em>"reached offer but not hired"</em>, <em>"moved to interview since monday"</em>).
+          </p>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
+        <button type="button" class="btn btn-primary" id="helpModalOkBtn">Got it!</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Detail Drawer -->
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
@@ -627,17 +697,32 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired", "Rejected"];
-    const NEXT_STAGE = {
+    let STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired", "Rejected"];
+    let NEXT_STAGE = {
       "Applied": "Screening",
       "Screening": "Interview",
       "Interview": "Offer",
       "Offer": "Hired"
     };
+    let FINAL_STAGES = new Set(["Hired", "Rejected"]);
 
     let boardData = {};
     let searchActive = false;
     let searchMatchingIds = new Set();
+
+    async function loadConfig() {
+      try {
+        const res = await fetch("/config");
+        if (res.ok) {
+          const cfg = await res.json();
+          if (cfg.stages) STAGES = cfg.stages;
+          if (cfg.allowed_transitions) NEXT_STAGE = cfg.allowed_transitions;
+          if (cfg.final_stages) FINAL_STAGES = new Set(cfg.final_stages);
+        }
+      } catch (e) {
+        console.warn("Could not load /config, using defaults", e);
+      }
+    }
 
     // Elements
     const boardGrid = document.getElementById("boardGrid");
@@ -649,6 +734,11 @@
     const refreshBtn = document.getElementById("refreshBtn");
 
     // Modals & Drawer
+    const helpGuideBtn = document.getElementById("helpGuideBtn");
+    const helpModalBackdrop = document.getElementById("helpModalBackdrop");
+    const helpModalCloseBtn = document.getElementById("helpModalCloseBtn");
+    const helpModalOkBtn = document.getElementById("helpModalOkBtn");
+
     const addCandidateBtn = document.getElementById("addCandidateBtn");
     const addModalBackdrop = document.getElementById("addModalBackdrop");
     const modalCloseBtn = document.getElementById("modalCloseBtn");
@@ -664,6 +754,23 @@
     const drawerBackdrop = document.getElementById("drawerBackdrop");
     const drawerCloseBtn = document.getElementById("drawerCloseBtn");
     const drawerBody = document.getElementById("drawerBody");
+
+    // Help Modal Handlers
+    helpGuideBtn.addEventListener("click", () => {
+      helpModalBackdrop.style.display = "flex";
+    });
+    helpModalCloseBtn.addEventListener("click", () => {
+      helpModalBackdrop.style.display = "none";
+    });
+    helpModalOkBtn.addEventListener("click", () => {
+      helpModalBackdrop.style.display = "none";
+    });
+
+    window.setQuickSearch = function(queryText) {
+      searchInput.value = queryText;
+      executeSearch();
+    };
+
 
     function showToast(message, isError = true) {
       toast.textContent = message;
@@ -717,7 +824,7 @@
           
           const nextTarget = NEXT_STAGE[stage];
           const hasNext = Boolean(nextTarget);
-          const canReject = stage !== "Hired" && stage !== "Rejected";
+          const canReject = !FINAL_STAGES.has(stage);
 
           card.innerHTML = `
             <div class="card-top">
@@ -956,7 +1063,11 @@
     }
 
     // Initial Load
-    loadBoard();
+    async function init() {
+      await loadConfig();
+      await loadBoard();
+    }
+    init();
   </script>
 </body>
 </html>

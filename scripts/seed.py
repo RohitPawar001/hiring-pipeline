@@ -14,6 +14,7 @@ def seed():
 
     # Calculate reference timestamps
     t_minus_14d = now - timedelta(days=14)
+    t_minus_12d = now - timedelta(days=12)
     t_minus_10d = now - timedelta(days=10)
     t_minus_8d = now - timedelta(days=8)
     t_minus_5d = now - timedelta(days=5)

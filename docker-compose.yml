@@ -17,6 +17,8 @@ services:
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/hiring
       APP_TZ: Asia/Kolkata
+    volumes:
+      - .:/code
     depends_on:
       db: { condition: service_healthy }
     ports: ["8000:8000"]
