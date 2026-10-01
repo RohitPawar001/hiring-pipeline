@@ -1,12 +1,962 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Hiring Pipeline</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Hiring Pipeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface-hover: #1f242c;
+      --surface-card: #21262d;
+      --border: #30363d;
+      --text: #f0f6fc;
+      --text-muted: #8b949e;
+      --primary: #58a6ff;
+      --primary-hover: #79c0ff;
+      --success: #3fb950;
+      --danger: #f85149;
+      --warning: #d29922;
+      --badge-applied: #388bfd33;
+      --badge-screening: #a371f733;
+      --badge-interview: #db61a233;
+      --badge-offer: #d2992233;
+      --badge-hired: #3fb95033;
+      --badge-rejected: #f8514933;
+      --radius: 10px;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: #fff;
+    }
+
+    .brand svg {
+      color: var(--primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--surface-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background-color: var(--surface-hover);
+      border-color: #8b949e;
+    }
+
+    .btn-primary {
+      background-color: #238636;
+      border-color: rgba(240, 246, 252, 0.1);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: #2ea043;
+    }
+
+    .btn-next {
+      background-color: #1f6feb;
+      border-color: transparent;
+      color: #fff;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+    }
+
+    .btn-next:hover {
+      background-color: #388bfd;
+    }
+
+    .btn-reject {
+      background-color: transparent;
+      border-color: var(--border);
+      color: var(--danger);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+    }
+
+    .btn-reject:hover {
+      background-color: rgba(248, 81, 73, 0.15);
+      border-color: var(--danger);
+    }
+
+    .main-container {
+      padding: 1.5rem 2rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      overflow-x: auto;
+    }
+
+    /* Search Bar */
+    .search-section {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+
+    .search-input-wrapper input {
+      width: 100%;
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.6rem 1rem 0.6rem 2.5rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .search-input-wrapper input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .search-status {
+      font-size: 0.875rem;
+      min-height: 1.25rem;
+    }
+
+    .search-interpreted {
+      color: var(--primary-hover);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .search-error {
+      color: var(--danger);
+      background-color: rgba(248, 81, 73, 0.1);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(248, 81, 73, 0.3);
+      display: inline-block;
+    }
+
+    .search-no-match {
+      color: var(--warning);
+    }
+
+    /* Global Alert / Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background-color: #f85149;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      z-index: 1000;
+      display: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      animation: slideUp 0.2s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Kanban Board */
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(240px, 1fr));
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .column {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 240px);
+    }
+
+    .column-header {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .col-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .col-count {
+      background-color: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .column-cards {
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Card */
+    .candidate-card {
+      background-color: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .candidate-card:hover {
+      border-color: #8b949e;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .candidate-card.search-highlight {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.3);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .card-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .card-id {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .card-email {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.4rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 0.5rem;
+    }
+
+    /* Modal / Drawer */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      animation: modalFade 0.2s ease;
+    }
+
+    @keyframes modalFade {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group textarea {
+      background-color: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .form-group input:focus, .form-group textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* Detail Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 500;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 400px;
+      height: 100%;
+      background-color: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+      z-index: 600;
+      transition: right 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1.25rem;
+      overflow-y: auto;
+    }
+
+    .drawer.open {
+      right: 0;
+    }
+
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 0.5rem;
+      position: relative;
+      padding-left: 1.25rem;
+      border-left: 2px solid var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -1.65rem;
+      top: 0.25rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      border: 2px solid var(--surface);
+    }
+
+    .timeline-time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .timeline-desc {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .timeline-note {
+      font-size: 0.8rem;
+      color: #8b949e;
+      background: var(--bg);
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      border-left: 2px solid var(--border);
+    }
+  </style>
 </head>
 <body>
-    <h1>Mini Hiring Pipeline</h1>
-    <div id="app"></div>
+
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <polyline points="16 11 18 13 22 9"></polyline>
+      </svg>
+      Mini Hiring Pipeline
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" id="addCandidateBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Add Candidate
+      </button>
+      <button class="btn" id="refreshBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Natural Language Search Section -->
+    <section class="search-section">
+      <div class="search-row">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="searchInput" placeholder="Search (e.g. 'sharma in screening', 'stuck in interview', 'reached offer but not hired'). Press Enter..." autocomplete="off">
+        </div>
+        <button class="btn" id="searchSubmitBtn">Search</button>
+        <button class="btn" id="searchClearBtn" style="display:none;">Clear</button>
+      </div>
+      <div class="search-status" id="searchStatus"></div>
+    </section>
+
+    <!-- Pipeline Kanban Board -->
+    <section class="board-grid" id="boardGrid">
+      <!-- 6 columns will be rendered here dynamically -->
+    </section>
+  </main>
+
+  <!-- Detail Drawer -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="detailDrawer">
+    <div class="modal-header">
+      <h2 class="modal-title" id="drawerTitle">Candidate Detail</h2>
+      <button class="modal-close" id="drawerCloseBtn">&times;</button>
+    </div>
+    <div id="drawerBody">
+      <!-- Injected dynamically -->
+    </div>
+  </aside>
+
+  <!-- Add Candidate Modal -->
+  <div class="modal-backdrop" id="addModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Add New Candidate</h2>
+        <button class="modal-close" id="modalCloseBtn">&times;</button>
+      </div>
+      <form id="addCandidateForm">
+        <div class="form-group">
+          <label for="candidateName">Full Name *</label>
+          <input type="text" id="candidateName" placeholder="e.g. Alice Smith" required>
+        </div>
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="candidateEmail">Email Address</label>
+          <input type="email" id="candidateEmail" placeholder="e.g. alice@example.com">
+        </div>
+        <div style="display:flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn" id="modalCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Candidate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Move with Note Modal -->
+  <div class="modal-backdrop" id="moveModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="moveModalTitle">Move Candidate</h2>
+        <button class="modal-close" id="moveModalCloseBtn">&times;</button>
+      </div>
+      <form id="moveCandidateForm">
+        <input type="hidden" id="moveCandidateId">
+        <input type="hidden" id="moveToStage">
+        <div class="form-group">
+          <label id="moveModalDesc">Transitioning candidate stage...</label>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="moveNote">Audit Note (Optional)</label>
+          <textarea id="moveNote" rows="3" placeholder="Add context or notes for this transition..."></textarea>
+        </div>
+        <div style="display:flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+          <button type="button" class="btn" id="moveModalCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="moveModalSubmitBtn">Confirm Move</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired", "Rejected"];
+    const NEXT_STAGE = {
+      "Applied": "Screening",
+      "Screening": "Interview",
+      "Interview": "Offer",
+      "Offer": "Hired"
+    };
+
+    let boardData = {};
+    let searchActive = false;
+    let searchMatchingIds = new Set();
+
+    // Elements
+    const boardGrid = document.getElementById("boardGrid");
+    const searchInput = document.getElementById("searchInput");
+    const searchSubmitBtn = document.getElementById("searchSubmitBtn");
+    const searchClearBtn = document.getElementById("searchClearBtn");
+    const searchStatus = document.getElementById("searchStatus");
+    const toast = document.getElementById("toast");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    // Modals & Drawer
+    const addCandidateBtn = document.getElementById("addCandidateBtn");
+    const addModalBackdrop = document.getElementById("addModalBackdrop");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+    const modalCancelBtn = document.getElementById("modalCancelBtn");
+    const addCandidateForm = document.getElementById("addCandidateForm");
+
+    const moveModalBackdrop = document.getElementById("moveModalBackdrop");
+    const moveModalCloseBtn = document.getElementById("moveModalCloseBtn");
+    const moveModalCancelBtn = document.getElementById("moveModalCancelBtn");
+    const moveCandidateForm = document.getElementById("moveCandidateForm");
+
+    const detailDrawer = document.getElementById("detailDrawer");
+    const drawerBackdrop = document.getElementById("drawerBackdrop");
+    const drawerCloseBtn = document.getElementById("drawerCloseBtn");
+    const drawerBody = document.getElementById("drawerBody");
+
+    function showToast(message, isError = true) {
+      toast.textContent = message;
+      toast.style.backgroundColor = isError ? "#f85149" : "#238636";
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 4000);
+    }
+
+    async function loadBoard() {
+      try {
+        const res = await fetch("/candidates");
+        if (!res.ok) throw new Error("Failed to load candidates");
+        boardData = await res.json();
+        renderBoard();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    function renderBoard() {
+      boardGrid.innerHTML = "";
+      STAGES.forEach(stage => {
+        const col = document.createElement("div");
+        col.className = "column";
+
+        const candidates = boardData[stage] || [];
+        const count = candidates.length;
+
+        col.innerHTML = `
+          <div class="column-header">
+            <div class="col-title">
+              <span>${stage}</span>
+            </div>
+            <span class="col-count">${count}</span>
+          </div>
+          <div class="column-cards" id="col-${stage}"></div>
+        `;
+
+        const cardsContainer = col.querySelector(`#col-${stage}`);
+
+        candidates.forEach(cand => {
+          const isHighlighted = searchActive && searchMatchingIds.has(cand.id);
+          if (searchActive && !searchMatchingIds.has(cand.id)) {
+            // Optional: you can dim or keep them visible
+          }
+
+          const card = document.createElement("div");
+          card.className = `candidate-card ${isHighlighted ? "search-highlight" : ""}`;
+          
+          const nextTarget = NEXT_STAGE[stage];
+          const hasNext = Boolean(nextTarget);
+          const canReject = stage !== "Hired" && stage !== "Rejected";
+
+          card.innerHTML = `
+            <div class="card-top">
+              <span class="card-name">${escapeHtml(cand.name)}</span>
+              <span class="card-id">#${cand.id}</span>
+            </div>
+            ${cand.email ? `<div class="card-email">${escapeHtml(cand.email)}</div>` : ''}
+            <div class="card-meta">
+              <span>${new Date(cand.entered_at).toLocaleDateString()}</span>
+              ${cand.days_in_stage !== undefined ? `<span>${cand.days_in_stage.toFixed(1)}d</span>` : ''}
+            </div>
+            ${(hasNext || canReject) ? `
+              <div class="card-actions" onclick="event.stopPropagation()">
+                ${hasNext ? `<button class="btn btn-next" onclick="openMoveModal(${cand.id}, '${escapeHtml(cand.name)}', '${nextTarget}')">Next → ${nextTarget}</button>` : ''}
+                ${canReject ? `<button class="btn btn-reject" onclick="openMoveModal(${cand.id}, '${escapeHtml(cand.name)}', 'Rejected')">Reject</button>` : ''}
+              </div>
+            ` : ''}
+          `;
+
+          card.addEventListener("click", () => openDetailDrawer(cand.id));
+          cardsContainer.appendChild(card);
+        });
+
+        boardGrid.appendChild(col);
+      });
+    }
+
+    // Detail Panel
+    async function openDetailDrawer(candidateId) {
+      try {
+        const res = await fetch(`/candidates/${candidateId}`);
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Candidate not found");
+        }
+        const data = await res.json();
+        const cand = data.candidate;
+        const history = data.history || [];
+
+        drawerBody.innerHTML = `
+          <div style="margin-bottom: 1.25rem;">
+            <h3 style="font-size: 1.2rem; color: #fff;">${escapeHtml(cand.name)}</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(cand.email || 'No email provided')}</p>
+            <div style="display:inline-block; margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: 6px; background: rgba(88, 166, 255, 0.15); color: var(--primary); font-size: 0.8rem; font-weight:600;">
+              ${cand.days_in_stage.toFixed(1)} days in ${cand.stage}
+            </div>
+          </div>
+
+          <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem;">
+            Stage History (Audit Log)
+          </h4>
+          <div class="timeline">
+            ${history.map(ev => `
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-time">${new Date(ev.occurred_at).toLocaleString()}</div>
+                <div class="timeline-desc">
+                  ${ev.from_stage ? `${ev.from_stage} → <strong>${ev.to_stage}</strong>` : `Created in <strong>${ev.to_stage}</strong>`}
+                </div>
+                ${ev.note ? `<div class="timeline-note">${escapeHtml(ev.note)}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        drawerBackdrop.style.display = "block";
+        detailDrawer.classList.add("open");
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    function closeDetailDrawer() {
+      drawerBackdrop.style.display = "none";
+      detailDrawer.classList.remove("open");
+    }
+
+    drawerCloseBtn.addEventListener("click", closeDetailDrawer);
+    drawerBackdrop.addEventListener("click", closeDetailDrawer);
+
+    // Search Logic
+    async function executeSearch() {
+      const q = searchInput.value.trim();
+      if (!q) {
+        clearSearch();
+        return;
+      }
+
+      try {
+        const res = await fetch(`/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        if (res.status === 422) {
+          const errors = data.detail?.errors || [data.detail || "Search query error."];
+          searchStatus.innerHTML = `<span class="search-error">${errors.map(escapeHtml).join("<br>")}</span>`;
+          searchActive = false;
+          searchClearBtn.style.display = "inline-flex";
+          renderBoard();
+          return;
+        }
+
+        if (!res.ok) throw new Error("Search failed.");
+
+        searchActive = true;
+        searchMatchingIds = new Set((data.results || []).map(r => r.id));
+        searchClearBtn.style.display = "inline-flex";
+
+        if (data.results && data.results.length > 0) {
+          searchStatus.innerHTML = `
+            <span class="search-interpreted">
+              🔍 Interpreted as: <strong>${escapeHtml(data.interpreted_as)}</strong> (${data.count} found)
+            </span>
+          `;
+        } else {
+          searchStatus.innerHTML = `
+            <span class="search-no-match">
+              ⚠️ ${escapeHtml(data.message || `No candidates match (${data.interpreted_as}).`)}
+            </span>
+          `;
+        }
+
+        renderBoard();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    function clearSearch() {
+      searchInput.value = "";
+      searchStatus.innerHTML = "";
+      searchActive = false;
+      searchMatchingIds.clear();
+      searchClearBtn.style.display = "none";
+      renderBoard();
+    }
+
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") executeSearch();
+    });
+    searchSubmitBtn.addEventListener("click", executeSearch);
+    searchClearBtn.addEventListener("click", clearSearch);
+
+    // Add Candidate Modal
+    addCandidateBtn.addEventListener("click", () => {
+      addCandidateForm.reset();
+      addModalBackdrop.style.display = "flex";
+      document.getElementById("candidateName").focus();
+    });
+
+    function closeAddModal() {
+      addModalBackdrop.style.display = "none";
+    }
+
+    modalCloseBtn.addEventListener("click", closeAddModal);
+    modalCancelBtn.addEventListener("click", closeAddModal);
+
+    addCandidateForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("candidateName").value.trim();
+      const email = document.getElementById("candidateEmail").value.trim() || null;
+
+      try {
+        const res = await fetch("/candidates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Failed to add candidate");
+        }
+
+        closeAddModal();
+        showToast("Candidate added successfully!", false);
+        await loadBoard();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+
+    // Move Modal
+    window.openMoveModal = function(candidateId, candidateName, toStage) {
+      document.getElementById("moveCandidateId").value = candidateId;
+      document.getElementById("moveToStage").value = toStage;
+      document.getElementById("moveModalTitle").textContent = `Move ${candidateName}`;
+      document.getElementById("moveModalDesc").textContent = `Transitioning to "${toStage}" stage`;
+      document.getElementById("moveNote").value = "";
+      moveModalBackdrop.style.display = "flex";
+      document.getElementById("moveNote").focus();
+    };
+
+    function closeMoveModal() {
+      moveModalBackdrop.style.display = "none";
+    }
+
+    moveModalCloseBtn.addEventListener("click", closeMoveModal);
+    moveModalCancelBtn.addEventListener("click", closeMoveModal);
+
+    moveCandidateForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const cid = document.getElementById("moveCandidateId").value;
+      const to = document.getElementById("moveToStage").value;
+      const note = document.getElementById("moveNote").value.trim() || null;
+
+      try {
+        const res = await fetch(`/candidates/${cid}/move`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to, note })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to move candidate");
+        }
+
+        closeMoveModal();
+        showToast(`Candidate moved to ${to}!`, false);
+        await loadBoard();
+      } catch (err) {
+        showToast(err.message);
+      }
+    });
+
+    refreshBtn.addEventListener("click", loadBoard);
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initial Load
+    loadBoard();
+  </script>
 </body>
 </html>
