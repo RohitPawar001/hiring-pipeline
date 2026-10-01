@@ -98,4 +98,55 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ## 🏗 Architecture & Design Decisions
 
-*(Add architectural details, decisions, trade-offs, and future improvements here)*
+### 📊 Database Schema & Event Sourcing / Immutability
+
+The pipeline uses an **append-only event model** for tracking candidate stage transitions rather than mutating status in-place:
+
+- **`candidates` table:** Stores candidate identity (`id`, `name`, `email`, `created_at`).
+- **`stage_events` table:** Append-only log capturing every transition (`candidate_id`, `from_stage`, `to_stage`, `occurred_at`, `note`).
+- **Database-Level Immutability:** PostgreSQL triggers (`no_update_delete` and `no_truncate`) enforce strict append-only constraints at the DB level via `forbid_change()`, preventing any `UPDATE`, `DELETE`, or `TRUNCATE` operations on `stage_events`.
+- **`candidate_current` View:** Current stage is derived dynamically using a `LATERAL` join on the most recent event, guaranteeing that the current state can never disagree with audit history.
+
+#### Verifying Immutability in PostgreSQL
+
+```bash
+docker compose exec -it db psql -U postgres -d hiring_db -c "UPDATE stage_events SET note='test';"
+# Output: ERROR: stage_events is append-only
+```
+
+---
+
+## 📡 REST API Endpoints
+
+The API provides endpoints to manage candidate progression through the hiring pipeline:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/candidates` | Add a candidate (starts at `Applied` stage) |
+| `GET` | `/candidates` | Retrieve candidate board grouped by stages |
+| `GET` | `/candidates/{cid}` | Get candidate details, days in stage, & full transition history |
+| `POST` | `/candidates/{cid}/move` | Transition candidate to the next valid stage (row-locked) |
+
+> **Interactive API Documentation:** Available at [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI).
+
+---
+
+## 🧪 Testing
+
+Run unit tests to verify the pipeline state machine rules and validation logic:
+
+### Running Tests with Docker Compose
+
+```bash
+docker compose exec app pytest tests/ -v
+```
+
+### Running Tests Locally
+
+```bash
+pytest tests/ -v
+```
+
+
+
+
