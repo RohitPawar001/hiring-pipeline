@@ -6,7 +6,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 1: Project Setup & Containerization
 
-### User Prompt
+### Prompt
 > Project setup and containerization with Docker Compose, FastAPI, and PostgreSQL.
 
 ### Assistant Action
@@ -17,7 +17,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 2: Schema Design & Database Immutability
 
-### User Prompt
+### Prompt
 > Step 3: Database schema with immutability. `db/init.sql` with `candidates`, `stage_events`, append-only triggers, and `candidate_current` derived view.
 
 ### Assistant Action
@@ -28,7 +28,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 3: State Machine & Pipeline Validation
 
-### User Prompt
+### Prompt
 > Step 5: State machine (pure logic, no DB). `app/pipeline.py` with `validate_move` and comprehensive tests.
 
 ### Assistant Action
@@ -39,7 +39,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 4: REST API Endpoints & Immutability Integration Tests
 
-### User Prompt
+### Prompt
 > Step 6 & 7: REST API and immutability tests. `POST /candidates`, `GET /candidates`, `GET /candidates/{cid}`, `POST /candidates/{cid}/move`, and DB trigger integration tests.
 
 ### Assistant Action
@@ -50,7 +50,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 5: Natural Language Search, Fuzzy Matching & Damerau-Levenshtein
 
-### User Prompt
+### Prompt
 > Step 8 & 9: Search parser, Damerau-Levenshtein distance, and candidate ranking.
 
 ### Discussion & Technical Deep-Dive
@@ -62,7 +62,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 6: Search Endpoint & Kanban Board Web UI
 
-### User Prompt
+### Prompt
 > Step 10 & 11: Implement `/search` endpoint combining SQL parameter filtering with Python fuzzy scoring, plus a minimal responsive UI.
 
 ### Assistant Action
@@ -77,7 +77,7 @@ This log captures key architectural and implementation interactions, prompts, it
 
 ## Session 7: Seed Data & Testing
 
-### User Prompt
+### Prompt
 > Step 12: Add `scripts/seed.py` with 10 sample candidates, historical dates, and duration milestones.
 
 ### Assistant Action
